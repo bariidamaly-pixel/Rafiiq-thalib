@@ -73,7 +73,7 @@ body{background:#f7f3ea;font-family:Cairo,Tahoma,Arial,sans-serif;padding:0 14px
 .feature{display:flex;align-items:center;gap:14px;text-align:right;background:#fff;color:#222;border:1px solid #eadfc6;border-radius:18px;padding:16px;margin:0 0 12px;box-shadow:0 4px 14px #5a451514;transition:transform .15s}
 .feature:active{transform:scale(.98)}
 .feature i{flex:none;width:56px;height:56px;border-radius:16px;display:grid;place-items:center;background:#e8f2ee;font-style:normal;font-size:28px}
-.feature b{display:block;color:#14584a;font-size:18px}
+  .feature b{display:block;color:#14584a;font-size:18px}
 .feature small{color:#6b6b6b;font-size:13px;line-height:1.7;display:block}
 .note{text-align:center;color:#8a7a55;font-size:13px}
 .card{border:1px solid #eadfc6;border-radius:18px;box-shadow:0 4px 14px #5a451510}
@@ -133,6 +133,7 @@ nav button.on{background:#14584a;color:#fff}
       <li>اختبر نفسك: استحضر المسائل من العناوين وحدها.</li>
     </ol>
   </details>
+  <input id="topic" dir="auto" placeholder="اختياري: موضوع الدرس وأسماء الأعلام والكتب" hidden>
   <input id="yt" type="url" dir="ltr" placeholder="https://www.youtube.com/watch?v=..." hidden>
   <label style="display:block;margin-top:8px"><input id="fast" type="checkbox" style="width:auto"> وضع سريع للتفريغ والتلخيص (دقته قد تكون أقل)</label>
   <button id="go">ابدأ</button>
@@ -179,7 +180,7 @@ const MODES = {
     hint: 'ضع رابط يوتيوب (فيديو عام) أو ارفع ملفًا صوتيًا',
     accept: 'audio/*,video/*',
     prompt: 'فرّغ الكلام في هذا المقطع إلى نص عربي كما قيل، دون تلخيص ولا زيادة. اكتبه في فقرات متصلة حسب المعنى مع علامات الترقيم، ولا تضع كل جملة في سطر، وافصل بين الفقرات بسطر فارغ، وإذا أنشد المتكلم شعرًا أو نظمًا فاكتب كل بيت في سطر مستقل بهذه الصورة: الصدر *** العجز، كما سمعته دون إصلاحه أو إكماله من حفظك، وما لم تسمعه بوضوح فاكتب مكانه [غير واضح].'
-  },
+    },
   ringkas: {
     hint: 'ارفع صورة أو فيديو أو PDF للمادة',
     accept: 'image/*,video/*,application/pdf',
@@ -197,7 +198,7 @@ const MODES = {
 };
 let mode = 'tasyjir', last = '';
 const RULES = '\nالتزم قواعد الكتابة العربية: صحة الإملاء (همزة الوصل والقطع، والهمزة المتوسطة والمتطرفة، والتاء المربوطة والهاء، والألف المقصورة والياء)، وعلامات الترقيم العربية (، ؛ : . ؟ !) في مواضعها. ضع الآيات بين ﴿ ﴾، والأحاديث بين « »، واضبط بالشكل ما يُشكل فقط. صحح الرسم والترقيم دون تغيير ألفاظ المتكلم أو حذفها أو تبديلها.';
-MODES.transkrip.prompt += RULES;
+MODES.transkrip.prompt += RULES + '\nهذا درس علمي شرعي أو لغوي. أنصت للسياق لتمييز المصطلحات وأسماء الأعلام والكتب. اكتب كلام المتكلم بالفصحى كما نطقه، وإن تكلم بالعامية فلا تحولها. ضع « » للأحاديث والنقول المصرح بها فقط. إذا ترددت في كلمة فاكتبها وبعدها (؟) ولا تخمن بصمت. أخرج نصًا مجردًا فقط: بلا HTML مثل <br> وبلا Markdown وبلا عناوين من عندك.';
 MODES.ringkas.prompt += RULES;
 
 try { $('key').value = localStorage.getItem('gkey') || ''; } catch (e) {}
@@ -213,7 +214,7 @@ function setMode(m) {
   $('names').textContent = '';
   closeEditor();
   $('yt').value = '';
-  $('yt').hidden = m !== 'transkrip';
+  $('yt').hidden = $('topic').hidden = m !== 'transkrip';
   $('result').hidden = true;
   $('status').textContent = '';
 }
@@ -277,7 +278,6 @@ function tree(node) {
   }
   return li;
 }
-
 // عرض النص أولًا بأول أثناء وصوله
 async function readStream(res, started) {
   const reader = res.body.getReader(), dec = new TextDecoder();
@@ -294,7 +294,7 @@ async function readStream(res, started) {
     if (!text) { started(); $('result').hidden = false; $('turn').hidden = true; $('status').textContent = 'يصل النص الآن...'; }
     text += t;
     if (mode === 'transkrip') { last = text; showTranscript(); }
-    else $('out').textContent = text;
+    else $('out').textContent = clean(text);
   };
   for (;;) {
     const { done, value } = await reader.read();
@@ -309,7 +309,12 @@ async function readStream(res, started) {
 }
 
 // جمع الأسطر القصيرة في فقرات
+// إزالة وسوم HTML ورموز Markdown
+const clean = t => t.replace(/<br\s*\/?>|<\/p>/gi, '\n').replace(/<\/?[a-z][^<>]*>/gi, '')
+  .replace(/&nbsp;/g, ' ').replace(/\*\*(?!\*)(.+?)\*\*/g, '$1').replace(/^\s*(#{1,6}\s+|```.*)/gm, '');
+
 function paragraphs(text) {
+  text = clean(text);
   const out = [];
   let p = '';
   const flush = () => { if (p) out.push(p); p = ''; };
@@ -366,7 +371,7 @@ $('go').onclick = async () => {
   try {
     const media = url ? [{ file_data: { file_uri: url } }] : await mediaParts(files, key, say);
     const joined = files.length > 1 ? '\nالملفات المرفقة صفحات متتابعة بالترتيب لمادة واحدة: صِل المسألة الممتدة بين الصفحات واجعلها شجرة واحدة دون تكرار.' : '';
-    const body = { contents: [{ parts: [...media, { text: MODES[run].prompt + joined }] }] };
+    const body = { contents: [{ parts: [...media, { text: MODES[run].prompt + joined + (run === 'transkrip' ? ($('topic').value.trim() ? '\nمعلومات للاستعانة بها في الإملاء فقط، ولا تدخلها في النص إلا إن نطقها المتكلم: ' + $('topic').value.trim() : '') : '') }] }] };
     if (run === 'tasyjir') body.generationConfig = { responseMimeType: 'application/json' };
 
     const stream = run !== 'tasyjir';
@@ -396,7 +401,7 @@ $('go').onclick = async () => {
       }
       const json = await res.json().catch(() => ({}));
       errors.push(m + ' [' + res.status + ']: ' + (json.error ? json.error.message : ''));
-    }
+      }
     if (!data) {
       if (stream && !$('result').hidden) errors.unshift('تنبيه: النص الظاهر ناقص، أعد المحاولة');
       throw new Error('\n' + errors.join('\n\n'));
@@ -424,7 +429,7 @@ $('go').onclick = async () => {
       }
     } else {
       if (run === 'transkrip') showTranscript();
-      else $('out').textContent = last;
+      else $('out').textContent = last = clean(last);
     }
     $('result').hidden = false;
     $('turn').hidden = $('showall').hidden = $('undo').hidden = run !== 'tasyjir';
@@ -518,16 +523,20 @@ async function readPart(res, alive, live) {
   }
 }
 
+  const exhausted = new Set();
+
 async function transcribePart(blob, key, say, label, live) {
   const body = { contents: [{ parts: [
     { inline_data: { mime_type: blob.type, data: await toBase64(blob) } },
-    { text: MODES.transkrip.prompt + '\nهذا جزء من تسجيل أطول. فرّغه من أول ثانية إلى آخر ثانية كاملًا دون اختصار، ولا تضف مقدمة ولا خاتمة من عندك.' }
+    { text: MODES.transkrip.prompt + '\nهذا جزء من تسجيل أطول. فرّغه من أول ثانية إلى آخر ثانية كاملًا دون اختصار، ولا تضف مقدمة ولا خاتمة من عندك.' + ($('topic').value.trim() ? '\nمعلومات للاستعانة بها في الإملاء فقط، ولا تدخلها في النص إلا إن نطقها المتكلم: ' + $('topic').value.trim() : '') }
   ] }] };
   const quick = $('fast').checked ? ['gemini-flash-lite-latest'] : [];
   const models = [...new Set([...quick, $('model').value.trim(), 'gemini-3.8-flash', 'gemini-flash-latest'])].filter(Boolean);
   let error = '';
   for (let round = 0; round < 3; round++) {
-    for (const m of models) {
+    const usable = models.filter(m => !exhausted.has(m));
+    if (!usable.length) break;
+    for (const m of usable) {
       say(m, error);
       const cfg = m === 'gemini-3.8-flash' ? { thinkingConfig: { thinkingLevel: 'low' } } : {};
       try {
@@ -547,6 +556,7 @@ async function transcribePart(blob, key, say, label, live) {
           if (!res.ok) {
             const json = await res.json().catch(() => ({}));
             error = m + ' [' + res.status + ']: ' + (json.error ? json.error.message : '');
+            if (res.status === 429 && /per ?day/i.test(JSON.stringify(json))) exhausted.add(m);
             continue;
           }
           const { text, finish } = await readPart(res, alive, live);
@@ -556,12 +566,12 @@ async function transcribePart(blob, key, say, label, live) {
         } finally { clearTimeout(idle); }
       } catch (e) { error = e.message; }
     }
-    if (round < 2) {
+    if (round < 2 && models.some(m => !exhausted.has(m))) {
       say('انتظار 30 ثانية ثم إعادة المحاولة', error);
       await new Promise(ok => setTimeout(ok, 30000));
     }
   }
-  throw new Error(error);
+  throw new Error(error || 'انتهت حصة اليوم لكل النماذج، أعد المحاولة لاحقًا');
 }
 
 const normalRun = $('go').onclick;
@@ -576,7 +586,8 @@ $('go').onclick = async () => {
   lock(true);
   $('result').hidden = true;
   $('showall').hidden = $('undo').hidden = true;
-  const texts = [];
+  const texts = [], partial = [];
+  exhausted.clear();
   let wake, total = 0, done = 0, failed = null;
   // نعرض الأجزاء بترتيبها، ونُعلّم الناقص منها
   const show = final => {
@@ -585,6 +596,20 @@ $('go').onclick = async () => {
       if (texts[i]) list.push(texts[i]);
       else if (!final) break;
       else list.push('[تنبيه: التفريغ غير مكتمل، الجزء ' + (i + 1) + ' من ' + total + ' ناقص]');
+    }
+    if (!list.length) return;
+    last = list.join('\n');
+    showTranscript();
+    $('result').hidden = false;
+    $('turn').hidden = true;
+  };
+  // الأجزاء المكتملة ثم أول جزء قيد الكتابة
+  const live = () => {
+    const list = [];
+    for (let i = 0; i < total; i++) {
+      if (texts[i]) { list.push(texts[i]); continue; }
+      if (partial[i]) list.push(partial[i]);
+      break;
     }
     if (!list.length) return;
     last = list.join('\n');
@@ -609,26 +634,23 @@ $('go').onclick = async () => {
     total = parts.length;
     let next = 0;
     clock = setInterval(draw, 1000);
-    // جزء واحد في كل مرة حتى لا نتجاوز حد الاستخدام
     const worker = async () => {
       while (next < total && !failed) {
         const i = next++;
         try {
           texts[i] = await transcribePart(parts[i](), key, progress, '', t => {
-            // عرض الجزء الجاري فورًا
-            last = texts.slice(0, i).concat(t).join('\n');
-            showTranscript();
-            $('result').hidden = false;
-            $('turn').hidden = true;
+            partial[i] = t;
+            live();
           });
           done++;
           progress();
-          show(false);
+          live();
         } catch (e) { failed = e; }
       }
     };
     progress();
-    await worker();
+    // جزآن في وقت واحد
+    await Promise.all([worker(), worker()]);
     clearInterval(clock);
     if (failed) throw failed;
     say('تم تفريغ الأجزاء كلها (' + total + '). راجع النتيجة مع الأصل');
@@ -637,7 +659,7 @@ $('go').onclick = async () => {
     if (done) show(true);
     say('خطأ: ' + e.message);
   } finally {
-    clearInterval(clock);
+      clearInterval(clock);
     if (wake) wake.release().catch(() => {});
     lock(false);
   }
@@ -782,7 +804,7 @@ function treeImage() {
   const c = document.createElement('canvas');
   c.width = Math.round(W * k); c.height = Math.round(H * k);
   const x = c.getContext('2d');
-  x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+           x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
   x.scale(k, k); x.translate(pad - L, pad - T);
   x.strokeStyle = '#14584a'; x.lineWidth = 1.5;
   boxes.forEach((p, el) => {
@@ -894,3 +916,5 @@ $('back').onclick = () => { if (!$('go').disabled) page(''); };
 </script>
 </body>
 </html>
+
+  
