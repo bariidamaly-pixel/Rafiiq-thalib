@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1f5a63">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -914,6 +916,16 @@ document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => {
 // لا نغادر أثناء المعالجة
 $('back').onclick = () => { if (!$('go').disabled) page(''); };
 </script>
+    <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .catch((err) => console.error('SW gagal:', err));
+      });
+    }
+  </script>
+</body>
+  
 </body>
 </html>
 
