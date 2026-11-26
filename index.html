@@ -923,6 +923,59 @@ $('back').onclick = () => { if (!$('go').disabled) page(''); };
       });
     }
   </script>
+ <!-- ===== التصميم العلمي ===== -->
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{background:#f7f3ea url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' fill='none' stroke='%2314584a' stroke-opacity='.08'%3E%3Cpath d='M38 38h44v44H38zM60 29l31 31-31 31-31-31z'/%3E%3Ccircle cx='60' cy='60' r='12'/%3E%3C/svg%3E");color:#0f3d33;font-family:Tajawal,Tahoma,sans-serif}
+.top{background:linear-gradient(145deg,#0f3d33,#1b6a57);color:#fff;box-shadow:none;border-radius:0 0 28px 28px;padding:30px 16px 20px}
+.top h1{font-family:Amiri,serif;font-size:40px;color:#f3d58a}
+.top p{font-size:16px;color:#f4efe2;opacity:1}
+.top h1::after{content:"◆";display:block;font-size:11px;color:#b8975a;line-height:1}
+.top button{color:#f3d58a;border-color:#b8975a;background:transparent}
+#home{counter-reset:bab}
+#home .feature{counter-increment:bab;background:#fffdf8;border:1px solid #e2d5b4;border-radius:20px;box-shadow:none;padding:18px 16px;margin-bottom:12px}
+#home .feature i{width:52px;height:52px;border-radius:50%;border:3px solid #e2d5b4;background:transparent;font-size:0}
+#home .feature i::before{content:counter(bab,arabic-indic);font:700 24px Amiri,serif;color:#14584a}
+#home .feature>span{flex:1}
+#home .feature b{font-family:Amiri,serif;font-size:25px;color:#0f3d33}
+#home .feature small{font-size:14px;font-weight:400;color:#66746f}
+#home .feature::after{content:"‹";font-size:28px;color:#14584a}
+#home .note{font-size:13px;color:#14584a}
+#home .aya{font:700 23px/2 Amiri,serif;text-align:center;color:#0f3d33;background:#fffdf8;border:1px solid #b8975a;outline:1px solid #b8975a;outline-offset:-7px;border-radius:20px;padding:26px 22px;margin:18px 0 0}
+.card,nav{background:#fffdf8;border-color:#e2d5b4;box-shadow:none}
+summary{color:#14584a}
+input{background:#fffdf8;border-color:#e2d5b4}
+button,#go,nav button.on{background:#14584a}
+#go{box-shadow:none}
+nav button{background:transparent}
+#editor{background:#fffdf8}
+.top svg{display:block;margin:0 auto -4px;width:76px;height:76px}
+#home .aya::before,#home .aya::after{content:"❖";display:block;font-size:15px;line-height:1.4;color:#b8975a}
+#home .sep{display:flex;align-items:center;gap:10px;color:#b8975a;font-size:13px;margin:6px 8px 14px}
+#home .sep::before,#home .sep::after{content:"";flex:1;border-top:1px solid #b8975a80}
+@media print{body{background:#fff}.card{background:#fff}}
+</style>
+<script>
+(() => {
+  // دواة وريشة
+  document.querySelector('.top').insertAdjacentHTML('afterbegin',
+    '<svg viewBox="0 0 80 80" aria-hidden="true">' +
+    '<path fill="#f3d58a" d="M72 6C52 10 38 24 34 46l5 2c4-3 8-4 12-4l-3-4c6 0 11-2 14-5l-5-2c8-5 13-15 15-27z"/>' +
+    '<path fill="none" stroke="#f3d58a" stroke-width="2" stroke-linecap="round" d="M64 14C48 28 38 42 30 60"/>' +
+    '<path fill="#b8975a" d="M20 52h20v5H20z"/>' +
+    '<path fill="#f3d58a" d="M18 57h24c6 4 8 8 8 12 0 4-3 6-7 6H17c-4 0-7-2-7-6 0-4 2-8 8-12z"/>' +
+    '<path fill="none" stroke="#14584a" stroke-width="2" d="M16 66h28"/></svg>');
+  const sep = document.createElement('div');
+  sep.className = 'sep';
+  sep.textContent = '❖';
+  document.getElementById('home').prepend(sep);
+  const p = document.createElement('p');
+  p.className = 'aya';
+  p.textContent = 'من لم يؤت من العلم ما يقمعه، فما أوتي منه لا ينفعه';
+  document.getElementById('home').appendChild(p);
+})();
+</script>
+ 
 </body>
   
 </html>
